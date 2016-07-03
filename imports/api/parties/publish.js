@@ -1,9 +1,10 @@
 import { Meteor } from 'meteor/meteor';
+import { Counts } from 'meteor/tmeasday:publish-counts';
  
 import { Parties } from './collection';
  
 if (Meteor.isServer) {
-  Meteor.publish('parties', function() {
+  Meteor.publish('parties', function(options, searchString) {
     const selector = {
       $or: [{
         // the public parties
@@ -25,7 +26,18 @@ if (Meteor.isServer) {
         }]
       }]
     };
+    
+    if (typeof searchString === 'string' && searchString.length) {
+      selector.name = {
+        $regex: `.*${searchString}.*`,
+        $options : 'i'
+      };
+    }
+    
+    Counts.publish(this, 'numberOfParties', Parties.find(selector), {
+      noReady: true
+    });
  
-    return Parties.find(selector);
+    return Parties.find(selector, options);
   });
 }
